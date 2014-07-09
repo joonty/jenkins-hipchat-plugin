@@ -34,12 +34,10 @@ public class StandardHipChatService implements HipChatService {
         for (String roomId : roomIds) {
             logger.info("Posting: " + from + " to " + roomId + ": " + message + " " + color);
             HttpClient client = getHttpClient();
-            String url = "https://" + host + "/v1/rooms/message?auth_token=" + token;
+            String url = "https://" + host + "/v2/room/" + roomId + "/notification?auth_token=" + token;
             PostMethod post = new PostMethod(url);
 
             try {
-                post.addParameter("from", from);
-                post.addParameter("room_id", roomId);
                 post.addParameter("message", message);
                 post.addParameter("color", color);
                 post.addParameter("notify", shouldNotify(color));
