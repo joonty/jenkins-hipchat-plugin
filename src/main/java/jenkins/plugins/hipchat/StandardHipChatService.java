@@ -2,10 +2,12 @@ package jenkins.plugins.hipchat;
 
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.methods.StringRequestEntity;
 import org.apache.commons.httpclient.methods.PostMethod;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.json.simple.JSONObject;
 
 import jenkins.model.Jenkins;
 import hudson.ProxyConfiguration;
@@ -34,14 +36,16 @@ public class StandardHipChatService implements HipChatService {
         for (String roomId : roomIds) {
             logger.info("Posting: " + from + " to " + roomId + ": " + message + " " + color);
             HttpClient client = getHttpClient();
-            String url = "https://" + host + "/v2/room/" + roomId + "/notification?auth_token=" + token;
+            String url = "https://" + host + "/v2/room/" + roomId.replace(" ", "%20") + "/notification?auth_token=" + token;
             PostMethod post = new PostMethod(url);
 
             try {
-                post.addParameter("message", message);
-                post.addParameter("color", color);
-                post.addParameter("notify", shouldNotify(color));
-                post.getParams().setContentCharset("UTF-8");
+                JSONObject obj = new JSONObject();
+                obj.put("message", message);
+                obj.put("color", color);
+                obj.put("notify", shouldNotify(color));
+
+                post.setRequestEntity(new StringRequestEntity(obj.toString(), "application/json", "UTF-8"));
                 int responseCode = client.executeMethod(post);
                 String response = post.getResponseBodyAsString();
                 if(responseCode != HttpStatus.SC_OK || ! response.contains("\"sent\"")) {
@@ -66,8 +70,8 @@ public class StandardHipChatService implements HipChatService {
         return client;
     }
 
-    private String shouldNotify(String color) {
-        return color.equalsIgnoreCase("green") ? "0" : "1";
+    private boolean shouldNotify(String color) {
+        return color.equalsIgnoreCase("green") ? false : true;
     }
 
     void setHost(String host) {
